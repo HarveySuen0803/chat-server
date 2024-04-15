@@ -1,5 +1,6 @@
 package com.harvey.protocol;
 
+import com.harvey.config.CommonConfig;
 import com.harvey.model.UserLoginRequestMessage;
 import com.harvey.model.Message;
 import com.harvey.serializer.SerializerFactory;
@@ -32,7 +33,7 @@ public class MessageCodec extends ByteToMessageCodec<Message> {
         out.writeByte(1);
         
         // 序列化方式 (1: JDK, 2: JSON, 3: Hessian) (1B)
-        out.writeByte(1);
+        out.writeByte(CommonConfig.getSerializerType());
         
         // 消息类型 (1B)
         out.writeByte(msg.getMessageType());
@@ -44,7 +45,7 @@ public class MessageCodec extends ByteToMessageCodec<Message> {
         out.writeByte(0xff);
         
         // 通过 JDK 进行序列化
-        byte[] bytes = SerializerFactory.getSerializer().serialize(msg);
+        byte[] bytes = SerializerFactory.getSerializer(CommonConfig.getSerializerType()).serialize(msg);
         
         // 消息内容长度 (4B)
         out.writeInt(bytes.length);
@@ -79,7 +80,11 @@ public class MessageCodec extends ByteToMessageCodec<Message> {
         // 通过 JDK 进行反序列化
         byte[] bytes = new byte[len];
         in.readBytes(bytes, 0, len);
-        Message msg = SerializerFactory.getSerializer().deserialize(bytes, Message.class);
+        
+        Message msg = SerializerFactory.getSerializer(serializerType).deserialize(bytes, Message.getMessageClass(messageType));
+        
+        log.debug("Decoded msg info: {}, {}, {}, {}, {}, {}", magicNum, version, serializerType, messageType, sequenceId, len);
+        log.debug("Decoded msg: {}", msg);
         
         msgList.add(msg);
     }

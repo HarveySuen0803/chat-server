@@ -1,6 +1,8 @@
 package com.harvey.protocol;
 
+import com.harvey.config.CommonConfig;
 import com.harvey.model.Message;
+import com.harvey.serializer.SerializerFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
@@ -25,14 +27,11 @@ public class MessageCodecSharable extends MessageToMessageCodec<ByteBuf, Message
         ByteBuf out = ctx.alloc().buffer();
         out.writeBytes(new byte[]{'C', 'A', 'F', 'E'});
         out.writeByte(1);
-        out.writeByte(1);
+        out.writeByte(CommonConfig.getSerializerType());
         out.writeByte(msg.getMessageType());
         out.writeInt(msg.getSequenceId());
         out.writeByte(0xff);
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(bos);
-        oos.writeObject(msg);
-        byte[] bytes = bos.toByteArray();
+        byte[] bytes = SerializerFactory.getSerializer(CommonConfig.getSerializerType()).serialize(msg);
         out.writeInt(bytes.length);
         out.writeBytes(bytes);
         outList.add(out);
@@ -49,8 +48,7 @@ public class MessageCodecSharable extends MessageToMessageCodec<ByteBuf, Message
         int length = in.readInt();
         byte[] bytes = new byte[length];
         in.readBytes(bytes, 0, length);
-        ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
-        Message msg = (Message) ois.readObject();
+        Message msg = SerializerFactory.getSerializer(serializerType).deserialize(bytes, Message.getMessageClass(messageType));
         
         log.debug("Decoded msg info: {}, {}, {}, {}, {}, {}", magicNum, version, serializerType, messageType, sequenceId, length);
         log.debug("Decoded msg: {}", msg);

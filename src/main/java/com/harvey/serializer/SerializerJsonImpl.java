@@ -15,6 +15,14 @@ public class SerializerJsonImpl implements Serializer {
     
     @Override
     public <T> T deserialize(byte[] bytes, Class<T> cls) {
-        return JSONUtil.toBean(new String(bytes, StandardCharsets.UTF_8), cls);
+        String s = new String(bytes, StandardCharsets.UTF_8);
+        
+        System.out.println("-----------------------------------------------------");
+        System.out.println(s);
+        System.out.println(JSONUtil.toBean(s, cls));
+        System.out.println("-----------------------------------------------------");
+        
+        
+        return JSONUtil.toBean(s, cls);
     }
 }
